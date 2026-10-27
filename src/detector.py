@@ -4,11 +4,10 @@ import json
 import re
 import subprocess
 import threading
-import time
 from datetime import datetime, timezone
 from pathlib import Path
 
-from scapy.all import Dot11, Dot11Beacon, Dot11Elt, Dot11ProbeResp, RadioTap, sniff
+from scapy.all import Dot11, Dot11Beacon, Dot11ProbeResp, RadioTap, sniff
 
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
 DEFAULT_CONFIG = PROJECT_ROOT / "config" / "trusted_networks.json"
@@ -88,6 +87,13 @@ def information_elements(frame):
             return
         yield element_id, raw_elements[offset:offset + length]
         offset += length
+
+
+def get_ssid(frame):
+    for element_id, info in information_elements(frame):
+        if element_id == 0:
+            return info.decode("utf-8", errors="replace")
+    return ""
 
 
 def get_channel(packet):
@@ -214,7 +220,7 @@ def packet_callback(packet, trusted_networks, event_logger, state):
         return
 
     frame = packet.getlayer(Dot11Beacon) or packet.getlayer(Dot11ProbeResp)
-    ssid = frame.info.decode("utf-8", errors="replace")
+    ssid = get_ssid(frame)
     bssid = dot11.addr2
     radio = packet.getlayer(RadioTap)
     rssi = getattr(radio, "dBm_AntSignal", None) if radio else None
@@ -241,7 +247,7 @@ def packet_callback(packet, trusted_networks, event_logger, state):
             other_bssids.add(bssid)
 
     for alert in rule_engine(ssid, bssid, rssi, channel, security, trusted_networks):
-        alert_key = (ssid, bssid, alert)
+        alert_key = (ssid, bssid, alert.split(":", 1)[0])
         if alert_key in state["alerts"]:
             continue
         state["alerts"].add(alert_key)
@@ -254,11 +260,15 @@ def channel_hopper(interface, stop_event, dwell_seconds):
         for channel in CHANNELS:
             if stop_event.is_set():
                 break
-            result = subprocess.run(
-                ["iw", "dev", interface, "set", "channel", str(channel)],
-                text=True,
-                capture_output=True,
-            )
+            try:
+                result = subprocess.run(
+                    ["iw", "dev", interface, "set", "channel", str(channel)],
+                    text=True,
+                    capture_output=True,
+                )
+            except OSError as error:
+                print(f"Channel hopping stopped: could not run iw: {error}", flush=True)
+                return
             if result.returncode:
                 message = result.stderr.strip() or result.stdout.strip()
                 print(f"Warning: could not select channel {channel}: {message}", flush=True)
