@@ -1,3 +1,10 @@
 {
-  "trusted_networks": {}
+  "trusted_networks": {
+    "motorola": {
+      "bssid": "e6:39:3c:d2:41:01",
+      "channel": 11,
+      "rssi_threshold": -60,
+      "security": "WPA2/3"
+    }
+  }
 }

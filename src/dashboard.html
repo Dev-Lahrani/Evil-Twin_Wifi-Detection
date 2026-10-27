@@ -1,0 +1,164 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light">
+<title>Field Notes — Wireless monitor</title>
+<style>
+:root{--paper:#f1f0e9;--sheet:#fbfaf6;--ink:#20241f;--muted:#686d64;--line:#c9cbc1;--green:#355b45;--green-pale:#e2e9df;--red:#9a3d2c;--red-pale:#f2e4df;--amber:#865716;--amber-pale:#f2ead7;--mono:ui-monospace,SFMono-Regular,Consolas,"Liberation Mono",monospace;--sans:Arial,Helvetica,sans-serif}
+*{box-sizing:border-box}body{margin:0;background:var(--paper);color:var(--ink);font:15px/1.5 var(--sans)}button,input,textarea{font:inherit}button{cursor:pointer}a{color:inherit}.shell{max-width:1420px;margin:auto;padding:0 36px}.masthead{border-bottom:1px solid var(--line);background:var(--sheet)}.masthead-inner{min-height:76px;display:flex;align-items:center;justify-content:space-between;gap:24px}.brand{display:flex;align-items:center;gap:13px}.mark{width:34px;height:34px;border:1px solid var(--ink);display:grid;place-items:center;font:700 11px var(--mono);letter-spacing:-1px}.brand-title{font-size:14px;font-weight:700;letter-spacing:.04em}.brand-sub{font:11px var(--mono);color:var(--muted);margin-top:2px}.mast-meta{display:flex;align-items:center;gap:20px;color:var(--muted);font:11px var(--mono)}.live{display:flex;align-items:center;gap:8px;color:var(--green)}.live-dot{width:7px;height:7px;background:#4c8b5c;border-radius:50%;box-shadow:0 0 0 3px #4c8b5c22}.intro{padding:34px 0 22px;display:flex;justify-content:space-between;align-items:end;gap:24px}.eyebrow,.section-kicker{font:11px var(--mono);letter-spacing:.12em;text-transform:uppercase;color:var(--muted)}h1{font-size:clamp(27px,4vw,38px);line-height:1.08;letter-spacing:-.04em;margin:8px 0 9px;font-weight:650}.intro p{margin:0;color:var(--muted);max-width:680px}.refresh{color:var(--muted);font:11px var(--mono);white-space:nowrap}.metrics{display:grid;grid-template-columns:repeat(4,1fr);border-top:1px solid var(--ink);border-bottom:1px solid var(--line);background:var(--sheet)}.metric{padding:17px 20px 19px;border-right:1px solid var(--line)}.metric:first-child{padding-left:0}.metric:last-child{border:0}.metric-label{font:11px var(--mono);color:var(--muted);text-transform:uppercase;letter-spacing:.06em}.metric-value{font:30px/1.15 var(--mono);letter-spacing:-.06em;margin-top:8px}.metric-note{font-size:12px;color:var(--muted);margin-top:3px}.layout{display:grid;grid-template-columns:minmax(0,1.8fr) minmax(285px,.8fr);gap:34px;padding:30px 0}.section-head{display:flex;align-items:baseline;justify-content:space-between;gap:16px;border-bottom:1px solid var(--ink);padding:0 0 11px;margin-bottom:0}.section-head h2{font-size:17px;letter-spacing:-.02em;margin:0;font-weight:650}.section-head span{font:11px var(--mono);color:var(--muted)}.alerts{margin-bottom:32px}.twin-comparison{margin-bottom:32px}.twin-list{list-style:none;margin:0;padding:0}.twin-card{padding:16px 0 18px;border-bottom:1px solid var(--line)}.twin-card:last-child{border-bottom:0}.twin-title{font-weight:700;margin-bottom:10px}.twin-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}.twin-side{background:var(--sheet);padding:12px;border-top:2px solid var(--line);min-width:0}.twin-side.candidate{border-top-color:var(--amber)}.twin-side.trusted{border-top-color:var(--green)}.twin-label{font:10px var(--mono);text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin-bottom:6px}.twin-value{font:12px var(--mono);overflow-wrap:anywhere}.twin-facts{display:flex;flex-wrap:wrap;gap:6px;margin-top:9px}.twin-delta{font-size:11px;color:var(--muted);margin-top:9px}.twin-seen{font:10px var(--mono);color:var(--muted);margin-top:8px}.twin-note{font-size:12px;color:var(--muted);margin-top:10px}.alert-list{list-style:none;margin:0;padding:0}.alert-item{display:grid;grid-template-columns:92px minmax(0,1fr) auto;gap:15px;padding:15px 0;border-bottom:1px solid var(--line);align-items:start}.severity{font:10px var(--mono);letter-spacing:.08em;text-transform:uppercase;padding:4px 7px;display:inline-block;width:max-content}.severity.high{color:var(--red);background:var(--red-pale)}.severity.medium{color:var(--amber);background:var(--amber-pale)}.alert-title{font-weight:650}.alert-detail{color:var(--muted);font-size:13px;margin-top:3px}.alert-time{font:10px var(--mono);color:var(--muted);white-space:nowrap}.empty{padding:25px 0;color:var(--muted);font-size:13px}.table-tools{display:flex;gap:8px;align-items:center}.search{width:180px;border:1px solid var(--line);background:var(--sheet);padding:7px 9px;font:12px var(--mono);color:var(--ink)}.table-wrap{overflow:auto;background:var(--sheet)}table{width:100%;border-collapse:collapse;min-width:640px;text-align:left}th{font:10px var(--mono);text-transform:uppercase;letter-spacing:.07em;color:var(--muted);padding:11px 10px;border-bottom:1px solid var(--line);white-space:nowrap}td{padding:11px 10px;border-bottom:1px solid #dedfd7;font-size:13px;vertical-align:top}tbody tr:last-child td{border-bottom:0}.mono{font:12px var(--mono)}.ssid{font-weight:650}.subtle{font-size:11px;color:var(--muted);margin-top:2px}.badge{display:inline-block;font:10px var(--mono);padding:3px 6px;background:#e9e9e2;color:#41463e;white-space:nowrap}.badge.open{background:var(--amber-pale);color:var(--amber)}.side-section{margin-bottom:30px}.side-section .section-head{margin-bottom:12px}.note{border-left:2px solid var(--amber);padding:2px 0 2px 13px;color:var(--muted);font-size:13px}.note strong{color:var(--ink)}.timeline{list-style:none;padding:0;margin:0}.timeline li{display:grid;grid-template-columns:54px 1fr;gap:11px;padding:9px 0;border-bottom:1px solid var(--line);font-size:12px}.timeline time{font:10px var(--mono);color:var(--muted);padding-top:2px}.timeline p{margin:0}.admin{background:#e8e8df;padding:17px;margin-top:16px}.admin h3{font-size:14px;margin:0 0 7px}.admin p{font-size:12px;color:var(--muted);margin:0 0 12px}.field-label{font:10px var(--mono);text-transform:uppercase;letter-spacing:.06em;color:var(--muted);display:block;margin:11px 0 5px}.field{width:100%;padding:9px 10px;border:1px solid #aaaDA3;background:var(--sheet);color:var(--ink)}textarea.field{min-height:150px;font:12px/1.5 var(--mono);resize:vertical}.actions{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}.button{border:1px solid var(--ink);padding:8px 11px;background:var(--ink);color:white;font-size:12px}.button.secondary{background:transparent;color:var(--ink)}.button.danger{background:var(--red);border-color:var(--red)}.button:disabled{opacity:.45;cursor:not-allowed}.admin-message{font-size:12px;margin-top:9px;color:var(--muted);min-height:18px}.admin-message.error{color:var(--red)}.foot{border-top:1px solid var(--ink);padding:16px 0 30px;color:var(--muted);font-size:11px;display:flex;justify-content:space-between;gap:18px}.foot strong{color:var(--ink)}.sources{font:10px var(--mono)}
+@media(max-width:850px){.shell{padding:0 22px}.layout{grid-template-columns:1fr;gap:8px}.metrics{grid-template-columns:repeat(2,1fr)}.metric:nth-child(2){border-right:0}.metric:nth-child(-n+2){border-bottom:1px solid var(--line)}.metric:nth-child(3){padding-left:0}.intro{align-items:start;flex-direction:column;gap:10px}}
+@media(max-width:520px){.shell{padding:0 15px}.masthead-inner{min-height:64px}.mast-meta{gap:9px;font-size:10px}.metric{padding:13px 12px}.metric-value{font-size:25px}.alert-item{grid-template-columns:76px 1fr;gap:9px}.alert-time{grid-column:2}.table-tools{align-items:stretch}.search{width:135px}.foot{flex-direction:column}}
+</style>
+</head>
+<body>
+<header class="masthead"><div class="shell masthead-inner"><div class="brand"><div class="mark">RF<br>01</div><div><div class="brand-title">FIELD NOTES / WIRELESS</div><div class="brand-sub">LOCAL NETWORK OBSERVATION</div></div></div><div class="mast-meta"><span class="live"><i class="live-dot"></i><span id="service-state">CONNECTING</span></span><span id="clock">--:--:--</span></div></div></header>
+<main class="shell">
+<section class="intro"><div><div class="eyebrow">Monitoring station / Raspberry Pi</div><h1>Nearby access points</h1><p>Observed networks and rule-based warnings from periodic Wi-Fi scans. A warning is a signal to verify, not proof of an attack.</p></div><div class="refresh">UPDATED <span id="updated">—</span></div></section>
+<section class="metrics" aria-label="Current scan summary"><div class="metric"><div class="metric-label">Networks seen</div><div class="metric-value" id="metric-aps">—</div><div class="metric-note">unique SSID / BSSID pairs</div></div><div class="metric"><div class="metric-label">Open networks</div><div class="metric-value" id="metric-open">—</div><div class="metric-note">advertise no link encryption</div></div><div class="metric"><div class="metric-label">Warnings</div><div class="metric-value" id="metric-alerts">—</div><div class="metric-note">distinct rule findings</div></div><div class="metric"><div class="metric-label">Last scan</div><div class="metric-value" id="metric-scan">—</div><div class="metric-note" id="metric-scan-note">waiting for first scan</div></div></section>
+<div class="layout"><div class="main-column">
+<section class="twin-comparison"><div class="section-head"><h2>Twin comparison</h2><span>OBSERVED VS TRUSTED</span></div><ul class="twin-list" id="twin-comparisons"><li class="empty">Waiting for observations of trusted networks.</li></ul></section>
+<section class="alerts"><div class="section-head"><h2>Warnings to review</h2><span id="alert-count">0 findings</span></div><ul class="alert-list" id="alerts"><li class="empty">No warnings recorded in the available event history.</li></ul></section>
+<section><div class="section-head"><h2>Observed networks</h2><div class="table-tools"><span id="network-count" class="mono">0</span><input class="search" id="filter" type="search" placeholder="Filter SSID / BSSID" aria-label="Filter networks"></div></div><div class="table-wrap"><table><thead><tr><th>Network</th><th>BSSID</th><th>Signal</th><th>Channel</th><th>Security</th><th>Finding</th></tr></thead><tbody id="networks"><tr><td colspan="6" class="empty">Waiting for scan data.</td></tr></tbody></table></div></section>
+</div><aside>
+<section class="side-section"><div class="section-head"><h2>Scan record</h2><span>RECENT</span></div><ul class="timeline" id="timeline"><li><time>—</time><p>Waiting for recorded events.</p></li></ul></section>
+<section class="side-section"><div class="section-head"><h2>Reading this page</h2><span>METHOD</span></div><div class="note"><strong>Evidence, not verdict.</strong> BSSID, channel, signal, and security mismatches are heuristic indicators. Mesh nodes, roaming, radio conditions, and router changes can explain them. Compare a warning with the trusted-network settings before acting.</div></section>
+<section class="side-section"><div class="section-head"><h2>Station controls</h2><span>ADMIN</span></div><div id="admin-panel" class="admin"><h3>Administrator sign-in</h3><p>Public access is read-only. Signing in enables scan and trusted-network controls.</p><label class="field-label" for="admin-password">Dashboard password</label><input class="field" id="admin-password" type="password" autocomplete="current-password"><div class="actions"><button class="button" id="login-button">Sign in</button></div><div class="admin-message" id="admin-message" role="status"></div></div></section>
+</aside></div>
+<footer class="foot"><span><strong>FIELD NOTES / RF-01</strong> · Local observations only · No cloud services</span><span class="sources">SCAN DATA IS LOCAL TO THIS STATION</span></footer>
+</main>
+<script>
+(() => {
+  const $ = (id) => document.getElementById(id);
+  const state = { csrf: "", authenticated: false, adminEnabled: false, adminPanelMode: "", events: [], status: {} };
+  const esc = (value) => String(value ?? "").replace(/[&<>"']/g, (c) => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+  const time = (value) => { if (!value) return "—"; const d = new Date(value); return Number.isNaN(d.valueOf()) ? "—" : d.toLocaleTimeString([], {hour:"2-digit",minute:"2-digit",second:"2-digit"}); };
+  const msg = (text, error=false) => { $("admin-message").textContent = text; $("admin-message").classList.toggle("error", error); };
+  async function api(path, options={}) {
+    const headers = {"Content-Type":"application/json", ...(options.headers||{})};
+    if (options.method === "POST" && state.csrf) headers["X-CSRF-Token"] = state.csrf;
+    const response = await fetch(path, {...options, headers, cache:"no-store"});
+    const data = await response.json().catch(() => ({}));
+    if (!response.ok) throw new Error(data.error || `Request failed (${response.status})`);
+    return data;
+  }
+  function renderAdmin() {
+    const panel = $("admin-panel");
+    const mode = !state.adminEnabled ? "disabled" : !state.status.dashboard_secure ? "insecure" : state.authenticated ? "admin" : "login";
+    if (state.adminPanelMode !== mode) {
+      state.adminPanelMode = mode;
+      panel.dataset.renderedMode = "";
+      if (!state.adminEnabled) {
+        panel.innerHTML = '<h3>Controls unavailable</h3><p>Administrator password is not configured on this station. Public monitoring remains available.</p>';
+      } else if (!state.status.dashboard_secure) {
+        panel.innerHTML = '<h3>Secure connection required</h3><p>Administrator sign-in is disabled over HTTP. Open this dashboard using its HTTPS address to use protected controls. Public monitoring remains available here.</p>';
+      } else if (!state.authenticated) {
+        panel.innerHTML = '<h3>Administrator sign-in</h3><p>Public access is read-only. Sign-in is accepted over HTTPS only.</p><label class="field-label" for="admin-password">Dashboard password</label><input class="field" id="admin-password" type="password" autocomplete="current-password"><div class="actions"><button class="button" id="login-button">Sign in</button></div><div class="admin-message" id="admin-message" role="status"></div>';
+        $("login-button").addEventListener("click", login);
+      }
+    }
+    if (!state.authenticated || !state.adminEnabled) return;
+    const config = state.status.trusted_networks || {};
+    const interval = state.status.scan_interval || 30;
+    const configuration = {trusted_networks:config,scan_interval:interval};
+    const scanControls = state.status.scan_mode === "managed" ? '<div class="actions"><button class="button" id="start-button">Start scans</button><button class="button danger" id="stop-button">Pause scans</button></div>' : '<p>Monitor capture is controlled from the station.</p>';
+    const content = `<h3>Controls enabled</h3><p>Scanner controls are applied on the Pi. Configuration is validated before saving.</p>${scanControls}<label class="field-label" for="trusted-config">Trusted networks + scan interval · JSON</label><textarea class="field" id="trusted-config" spellcheck="false">${esc(JSON.stringify(configuration,null,2))}</textarea><div class="actions"><button class="button secondary" id="save-config">Validate &amp; save</button><button class="button secondary" id="logout-button">Sign out</button></div><div class="admin-message" id="admin-message" role="status"></div>`;
+    if (panel.dataset.renderedMode !== "admin") {
+      panel.innerHTML = content;
+      panel.dataset.renderedMode = "admin";
+      if (state.status.scan_mode === "managed") {
+        $("start-button").addEventListener("click", () => scanAction("start"));
+        $("stop-button").addEventListener("click", () => scanAction("stop"));
+      }
+      $("logout-button").addEventListener("click", logout);
+      $("save-config").addEventListener("click", saveConfig);
+    } else {
+      const textarea = $("trusted-config");
+      if (document.activeElement !== textarea) textarea.value = JSON.stringify(configuration,null,2);
+    }
+  }
+  async function login() {
+    try { const result = await api("/api/login", {method:"POST",body:JSON.stringify({password:$("admin-password").value})}); state.csrf=result.csrf_token; state.authenticated=true; msg("Signed in."); await refresh(); }
+    catch(error) { msg(error.message,true); }
+  }
+  async function logout() {
+    try { await api("/api/logout", {method:"POST",body:"{}"}); state.csrf="";state.authenticated=false;await refresh(); }
+    catch(error) { msg(error.message,true); }
+  }
+  async function scanAction(action) {
+    try { await api("/api/admin/scan", {method:"POST",body:JSON.stringify({action})}); msg(action === "start" ? "Scanner start requested." : "Scanner stop requested."); await refresh(); }
+    catch(error) { msg(error.message,true); }
+  }
+  async function saveConfig() {
+    try {
+      const parsed=JSON.parse($("trusted-config").value);
+      const result=await api("/api/admin/config", {method:"POST",body:JSON.stringify(parsed)});
+      state.status.trusted_networks=result.config.trusted_networks;
+      msg("Configuration validated and saved. New settings apply on the next scan.");
+      await refresh();
+    } catch(error) { msg(error.message,true); }
+  }
+  function render(status, events) {
+    state.status=status; state.events=events;
+    state.authenticated=Boolean(status.authenticated); state.adminEnabled=Boolean(status.admin_enabled); state.csrf=status.csrf_token || state.csrf;
+    $("service-state").textContent=status.scanner_running ? "SCANNING" : "PAUSED";
+    $("service-state").previousElementSibling.classList.toggle("live-dot",Boolean(status.scanner_running));
+    $("updated").textContent=new Date().toLocaleTimeString([], {hour:"2-digit",minute:"2-digit",second:"2-digit"});
+    const aps=status.access_points || [];
+    const alerts=events.filter(e=>e.event === "ALERT").slice().reverse();
+    $("metric-aps").textContent=aps.length;
+    $("metric-open").textContent=aps.filter(a=>a.security === "Open").length;
+    $("metric-alerts").textContent=status.alert_count ?? alerts.length;
+    $("metric-scan").textContent=status.last_scan ? time(status.last_scan) : "—";
+    $("metric-scan-note").textContent=status.last_error ? `Last scan failed: ${status.last_error}` : status.last_scan ? `${status.scan_interval || 30}s interval · ${status.scan_mode || "managed"} mode` : "waiting for first scan";
+    $("alert-count").textContent=`${alerts.length} recent finding${alerts.length===1?"":"s"}`;
+    $("alerts").innerHTML=alerts.length ? alerts.slice(0,12).map(e=>{
+      const severity=(e.message||"").includes("[HIGH]")?"high":"medium";
+      const label=severity === "high"?"HIGH":"REVIEW";
+      return `<li class="alert-item"><span class="severity ${severity}">${label}</span><div><div class="alert-title">${esc(e.message || "Rule finding")}</div><div class="alert-detail">${esc(e.ssid || "Hidden network")} · ${esc(e.bssid || "BSSID unavailable")}${e.channel?` · channel ${esc(e.channel)}`:""}${e.security?` · ${esc(e.security)}`:""}</div></div><time class="alert-time">${esc(time(e.timestamp))}</time></li>`;
+    }).join("") : '<li class="empty">No rule warnings in the recorded history. This is not a guarantee that the airspace is safe.</li>';
+    renderComparisons(status.twin_comparisons || []);
+    renderNetworks(aps);
+    const recent=events.slice(-8).reverse();
+    $("timeline").innerHTML=recent.length?recent.map(e=>`<li><time>${esc(time(e.timestamp))}</time><p>${esc(e.event === "ALERT" ? e.message : `Observed ${e.ssid || "hidden SSID"} · ${e.security || "security unknown"}`)}</p></li>`).join(""):'<li><time>—</time><p>Waiting for recorded events.</p></li>';
+    renderAdmin();
+  }
+  function renderComparisons(comparisons) {
+    const host=$("twin-comparisons");
+    if (!comparisons.length) {
+      host.innerHTML='<li class="empty">No trusted SSIDs configured. Add one to compare observations against a known AP.</li>';
+      return;
+    }
+    const stamp=(value)=>value?new Date(value).toLocaleString():"—";
+    const fact=(label,matched)=>matched===null?`<span class="badge">${label}: not reported</span>`:`<span class="badge ${matched?"":"open"}">${label}: ${matched?"match":"DIFF"}</span>`;
+    host.innerHTML=comparisons.map(group=>{
+      const observations=group.observations||[];
+      if (!observations.length) return `<li class="twin-card"><div class="twin-title">${esc(group.ssid)}</div><div class="empty">Trusted AP not seen in the latest scan. No live comparison available.</div><div class="twin-side trusted"><div class="twin-label">Configured baseline</div><div class="twin-value">BSSID ${esc(group.expected.bssid)}</div><div class="twin-facts">${group.expected.channel==null?'':`<span class="badge">Channel ${esc(group.expected.channel)}</span>`}${group.expected.security?`<span class="badge">${esc(group.expected.security)}</span>`:''}</div></div></li>`;
+      return `<li class="twin-card"><div class="twin-title">${esc(group.ssid)} <span class="subtle">· ${observations.length} observed BSSID${observations.length===1?'':'s'}</span></div>${observations.map(ap=>{
+        const trusted=ap.is_trusted_bssid;
+        const signal=ap.rssi==null?"not reported":`${esc(ap.rssi)} dBm`;
+        const signalText=ap.signal_threshold==null||ap.rssi==null?"":` · baseline ${esc(ap.signal_threshold)} dBm; signal-rule limit ${esc(ap.signal_alert_limit)} dBm`;
+        return `<div class="twin-grid"><div class="twin-side trusted"><div class="twin-label">Trusted baseline</div><div class="twin-value">BSSID ${esc(group.expected.bssid)}</div><div class="twin-facts">${group.expected.channel==null?'':`<span class="badge">Channel ${esc(group.expected.channel)}</span>`}${group.expected.security?`<span class="badge">${esc(group.expected.security)}</span>`:''}</div></div><div class="twin-side ${trusted?'trusted':'candidate'}"><div class="twin-label">${trusted?'Expected BSSID observed':'Other AP using this SSID'}</div><div class="twin-value">BSSID ${esc(ap.bssid)}</div><div class="twin-facts">${fact('BSSID',ap.bssid_match)}${ap.channel==null?'<span class="badge">Channel: not reported</span>':fact(`Ch ${esc(ap.channel)}`,ap.channel_match)}${fact(esc(ap.security),ap.security_match)}<span class="badge">Signal ${signal}</span></div><div class="twin-delta">${trusted?'Baseline radio observed.':`Signal ${signal}${signalText}`}</div><div class="twin-seen">First seen ${esc(stamp(ap.first_seen))} · Last seen ${esc(stamp(ap.last_seen))}</div></div></div>`;
+      }).join('')}<div class="twin-note">A second BSSID is an identity difference, not proof of malicious intent. Mesh nodes, roaming, and shared SSIDs can be legitimate. Compare each field with the known router.</div></li>`;
+    }).join("");
+  }
+  function renderNetworks(aps) {
+    const query=$("filter").value.trim().toLowerCase();
+    const visible=aps.filter(a=>`${a.ssid} ${a.bssid}`.toLowerCase().includes(query));
+    $("network-count").textContent=`${visible.length} / ${aps.length}`;
+    if (!visible.length) { $("networks").innerHTML='<tr><td colspan="6" class="empty">No matching networks in the latest inventory.</td></tr>';return; }
+    $("networks").innerHTML=visible.map(a=>`<tr><td><div class="ssid">${esc(a.ssid || "Hidden network")}</div><div class="subtle">${a.trusted?"trusted entry":"observed"}</div></td><td class="mono">${esc(a.bssid)}</td><td class="mono">${a.rssi==null?"—":`${esc(a.rssi)} dBm`}</td><td class="mono">${a.channel==null?"—":esc(a.channel)}</td><td><span class="badge ${a.security==="Open"?"open":""}">${esc(a.security || "Unknown")}</span></td><td>${a.findings?.length?`<span class="severity ${a.findings.some(x=>x.includes("[HIGH]"))?"high":"medium"}">${a.findings.length} rule${a.findings.length===1?"":"s"}</span>`:'<span class="subtle">—</span>'}</td></tr>`).join("");
+  }
+  async function refresh() {
+    try { const [status,history]=await Promise.all([api("/api/status"),api("/api/history")]); render(status,history.events||[]); }
+    catch(error) { $("service-state").textContent="NO DATA"; }
+  }
+  $("login-button").addEventListener("click",login);
+  $("filter").addEventListener("input",()=>renderNetworks(state.status.access_points||[]));
+  refresh(); setInterval(refresh,5000);
+  setInterval(()=>$("clock").textContent=new Date().toLocaleTimeString([], {hour:"2-digit",minute:"2-digit",second:"2-digit"}),1000);
+})();
+</script>
+</body>
+</html>

@@ -1,6 +1,6 @@
 # Ubuntu Server Setup Guide for Evil Twin Detector
 
-Use this guide on the Raspberry Pi itself or through SSH over Ethernet. The detector changes only the selected Wi-Fi interface (`wlan0`) to monitor mode; keep the Pi's Ethernet interface up for SSH access.
+Use this guide on the Raspberry Pi itself or through SSH over Ethernet. For the built-in Wi-Fi adapter, managed mode can scan without changing its connection; keep Ethernet available for reliable administration while scans briefly use the radio.
 
 ## 1. Install dependencies
 
@@ -55,7 +55,36 @@ From the project root on the Pi:
 sudo python3 src/detector.py --interface wlan0
 ```
 
-The detector enables monitor mode, scans channels 1-13, writes discovered APs and alerts to `logs/detector.csv`, and restores the interface mode when stopped with Ctrl+C. It prints a summary at shutdown. If the Pi's Wi-Fi device uses another interface name, pass it with `--interface`. Check availability with `iw dev`. Optional flags: `--config config/trusted_networks.json`, `--log logs/detector.csv`, and `--dwell 1.0`.
+By default the detector enables monitor mode on the selected interface, scans channels 1-13, writes discovered APs and alerts to `logs/detector.csv`, and restores that interface mode when stopped with Ctrl+C. It prints a summary at shutdown. If using a USB monitor-capable adapter, check its interface name with `iw dev` and select it with `--interface` (often `wlan1`), leaving the Pi's built-in `wlan0` connected to the hotspot for SSH and dashboard access. Keep Ethernet connected until you have verified both Wi-Fi access and scanning. If the Pi's built-in Wi-Fi is the only adapter or does not support monitor mode, use periodic scans in managed mode instead:
+
+```bash
+sudo python3 src/detector.py --interface wlan0 --mode managed --scan-interval 30
+```
+
+Managed mode leaves the Wi-Fi interface connected, scans nearby networks every 30 seconds, and may briefly pause that connection during each scan. Prefer connecting over Ethernet before starting it. For hotspot-only dashboard access, bind to the Pi's `wlan0` address; `0.0.0.0` listens on every Pi network interface, including Ethernet. The dashboard listens on port 8080 by default. Browse to `http://<Pi-address>:8080/` for read-only HTTP, or `https://<Pi-address>:8080/` when TLS is configured. Nearby SSIDs, BSSIDs, signal measurements, and warning history will be visible to anyone who can reach that port, so use this only on a network you trust. The dashboard has no write controls unless a password and TLS certificate/key are configured; those options require HTTPS because an HTTP password would be sent unencrypted. To create local credentials for the hotspot IP (replace the example address with `wlan0`'s actual address), run:
+
+```bash
+sudo install -d -m 700 /etc/eviltwin
+sudo sh -c 'openssl rand -hex 24 > /etc/eviltwin/dashboard-password && chmod 600 /etc/eviltwin/dashboard-password'
+PI_WLAN0_IP=$(ip -4 -o addr show dev wlan0 | awk '{split($4,a,"/"); print a[1]}')
+sudo openssl req -x509 -newkey rsa:2048 -nodes -days 365 \
+  -keyout /etc/eviltwin/dashboard.key -out /etc/eviltwin/dashboard.crt \
+  -subj "/CN=$PI_WLAN0_IP" -addext "subjectAltName=IP:$PI_WLAN0_IP"
+sudo chmod 600 /etc/eviltwin/dashboard.key
+```
+
+Then pass `--dashboard-password-file /etc/eviltwin/dashboard-password --dashboard-cert /etc/eviltwin/dashboard.crt --dashboard-key /etc/eviltwin/dashboard.key`; protect the password file and private key, and expect the browser to warn that the locally generated certificate is not issued by a public certificate authority.
+
+When controls are enabled, the dashboard lets an authenticated administrator pause/resume managed scans and validate/save the trusted-network JSON plus scan interval. No start/stop controls are offered for monitor-mode capture. If the Pi's Wi-Fi device uses another interface name, pass it with `--interface`. Check availability with `iw dev`. Optional flags: `--config config/trusted_networks.json`, `--log logs/detector.csv`, `--dwell 1.0` (monitor mode), and `--scan-interval 30` (managed mode).
+
+The same run command can publish the dashboard on the hotspot address while scanning on the USB adapter:
+
+```bash
+PI_WLAN0_IP=$(ip -4 -o addr show dev wlan0 | awk '{split($4,a,"/"); print a[1]}')
+sudo python3 src/detector.py --interface wlan1 --dashboard-host "$PI_WLAN0_IP"
+```
+
+This uses monitor mode on `wlan1`; `wlan0` can remain connected to the hotspot. Confirm the interface names with `iw dev` before running the command. On a home hotspot, open `https://<PI_WLAN0_IP>:8080/` (replace the placeholder with the printed address) from another connected device; accept the locally generated certificate warning if prompted. The dashboard administrator password is stored in `/etc/eviltwin/dashboard-password` on the Pi and can be read there with `sudo cat /etc/eviltwin/dashboard-password`. To start it detached, `nohup` can keep it running, but use a proper service manager for automatic startup and recovery.
 
 To run it in a persistent SSH session, install and use `tmux`:
 
