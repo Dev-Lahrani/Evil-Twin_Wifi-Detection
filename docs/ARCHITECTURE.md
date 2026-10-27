@@ -12,21 +12,22 @@ The Raspberry Pi 3B+ is the ideal host for this project due to its integrated Wi
 - **Resource Usage:** By using a deterministic rules engine instead of a Neural Network, the system maintains a low CPU footprint, preventing thermal throttling on the Pi.
 
 ## 3. The Deterministic Rules Engine
-The detector uses five primary heuristics to flag anomalies:
+The detector uses these configured heuristics to flag anomalies:
 
 | Rule ID | Logic | Threat Identified | Severity |
 |---|---|---|---|
 | **R-01** | BSSID $\neq$ Trusted BSSID for a known SSID | MAC Spoofing | High |
-| **R-02** | $\Delta RSSI > \text{Threshold}$ | Power Overpowering (Evil Twin) | High |
-| **R-03** | Sequence Counter Regression/Jump | Concurrent Transmitter Injection | Critical |
-| **R-04** | Security $\neq$ Expected (e.g. Open vs WPA3) | Captive Portal Downgrade | Critical |
-| **R-05** | Channel $\neq$ Expected Channel | Off-Channel Cloning | Medium |
+| **R-02** | Signal exceeds configured threshold by more than 10 dB | Unusually strong signal (verify) | High |
+| **R-04** | Security mode differs from the configured trusted mode | Possible security downgrade or clone | High |
+| **R-05** | Channel differs from the configured channel | Off-channel clone (verify) | Medium |
+| **R-06** | Multiple BSSIDs advertise the same SSID | Possible clone; mesh systems can be legitimate | Medium |
 
 ## 4. Pipeline Workflow
 1. **Capture:** `scapy` sniffs raw 802.11 frames.
 2. **Parsing:** Dissects **Beacon** and **Probe Response** frames.
-3. **Evaluation:** Passes parsed fields (SSID, BSSID, RSSI, Sequence Number) into the Rule Engine.
-4. **Alerting:** If a rule is triggered, an alert is logged with the associated severity.
+3. **Evaluation:** Checks SSID, BSSID, RSSI, channel, and advertised security against the JSON trusted-network config.
+4. **Alerting and logging:** Prints each discovered AP and unique alert and appends events to a CSV log.
+5. **Summary:** Reports unique AP and alert counts when scanning stops.
 
 ## 5. Evaluation Methodology (for Viva/Paper)
 To prove the system works, we will use the following lab setup:
