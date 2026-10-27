@@ -6,6 +6,7 @@ import re
 import subprocess
 import tempfile
 import threading
+import time
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -33,6 +34,7 @@ class DetectorState:
         self.last_error = ""
         self.scan_interval = scan_interval
         self.scan_mode = scan_mode
+        self.fingerprint_store = None
 
     def record_scan(self, access_points, error=""):
         now = datetime.now(timezone.utc).isoformat()
@@ -52,14 +54,31 @@ class DetectorState:
 
     def observe_access_point(self, ap):
         now = datetime.now(timezone.utc).isoformat()
+        key = (ap["ssid"], ap["bssid"])
         with self.lock:
             self.last_scan = now
-            key = (ap["ssid"], ap["bssid"])
             current = self.access_points.setdefault(key, {})
             first_seen = current.get("first_seen", now)
             current.update(ap)
             current["first_seen"] = first_seen
             current["last_seen"] = now
+        try:
+            fingerprint_update = self.fingerprint_store.observe(ap) if self.fingerprint_store else None
+        except OSError as error:
+            with self.lock:
+                self.last_error = f"Fingerprint persistence failed: {error}"
+            return None
+        if fingerprint_update:
+            with self.lock:
+                if self.last_error.startswith("Fingerprint persistence failed:"):
+                    self.last_error = ""
+
+        if fingerprint_update:
+            with self.lock:
+                current = self.access_points.get(key)
+                if current is not None:
+                    current["fingerprint"] = fingerprint_update["fingerprint"]
+        return fingerprint_update
 
     def record_event(self, event):
         with self.lock:
@@ -124,7 +143,276 @@ class DetectorState:
                 "twin_comparisons": comparisons,
                 "alert_count": sum(1 for event in self.events if event.get("event") == "ALERT"),
                 "trusted_networks": dict(self.trusted_networks),
+                "fingerprints": self.fingerprint_store.snapshot(
+                    limit=100,
+                    observed_after=time.time() - max(90, self.scan_interval * 3),
+                ) if self.fingerprint_store else [],
+                "fingerprint_count": self.fingerprint_store.count if self.fingerprint_store else 0,
             }
+
+
+
+FINGERPRINT_VERSION = 1
+FINGERPRINT_LEARNING_SIGHTINGS = 3
+FINGERPRINT_MIN_INTERVAL_SECONDS = 20
+FINGERPRINT_SIGNAL_DELTA_DB = 20
+FINGERPRINT_MAX_RECORDS = 5000
+FINGERPRINT_DRIFT_FIELDS = ("band", "channel", "security", "strong_signal")
+
+
+class FingerprintStore:
+    """Persist observed AP fingerprints as evidence, never as trusted identities."""
+
+    def __init__(self, path, minimum_interval=FINGERPRINT_MIN_INTERVAL_SECONDS):
+        self.path = Path(path)
+        self.minimum_interval = minimum_interval
+        self.lock = threading.RLock()
+        self.records = {}
+        self.dirty = False
+        self.last_save = time.monotonic()
+        if self.path.exists():
+            try:
+                with self.path.open(encoding="utf-8") as fingerprint_file:
+                    data = json.load(fingerprint_file)
+            except (OSError, json.JSONDecodeError) as error:
+                raise ValueError(f"Could not load fingerprint store {self.path}: {error}") from error
+            if not isinstance(data, dict) or data.get("version") != FINGERPRINT_VERSION or not isinstance(data.get("networks"), dict):
+                raise ValueError(f"Fingerprint store {self.path} has an unsupported or invalid format")
+            records = data["networks"]
+            if len(records) > FINGERPRINT_MAX_RECORDS:
+                raise ValueError(f"Fingerprint store {self.path} exceeds the {FINGERPRINT_MAX_RECORDS}-record limit")
+            for key, record in records.items():
+                if not isinstance(record, dict) or not isinstance(record.get("ssid"), str) or not isinstance(record.get("bssid"), str):
+                    raise ValueError(f"Fingerprint store {self.path} contains an invalid AP record")
+                if key != self._key(record["ssid"], record["bssid"]):
+                    raise ValueError(f"Fingerprint store {self.path} contains an inconsistent AP key")
+                baseline = record.get("baseline")
+                if baseline is not None and not isinstance(baseline, dict):
+                    raise ValueError(f"Fingerprint store {self.path} contains an invalid baseline")
+                if baseline is not None:
+                    if baseline.get("band") not in (None, "Unknown", "2.4 GHz", "5 GHz", "6 GHz"):
+                        raise ValueError(f"Fingerprint store {self.path} contains an invalid baseline band")
+                    if baseline.get("security") is not None and baseline.get("security") not in SECURITY_MODES:
+                        raise ValueError(f"Fingerprint store {self.path} contains an invalid baseline security mode")
+                active = record.get("active_drift", {})
+                streaks = record.get("drift_streaks", {})
+                samples = record.get("samples", [])
+                if not isinstance(active, dict) or not isinstance(streaks, dict):
+                    raise ValueError(f"Fingerprint store {self.path} contains invalid drift state")
+                if not isinstance(samples, list) or len(samples) > FINGERPRINT_LEARNING_SIGHTINGS or any(not isinstance(sample, dict) for sample in samples):
+                    raise ValueError(f"Fingerprint store {self.path} contains invalid AP samples")
+                if type(record.get("sightings", 0)) is not int or record.get("sightings", 0) < 0:
+                    raise ValueError(f"Fingerprint store {self.path} contains an invalid sightings count")
+                for timestamp_field in ("last_sample_epoch", "last_seen_epoch"):
+                    timestamp = record.get(timestamp_field, 0)
+                    if type(timestamp) not in (int, float) or not 0 <= timestamp < float("inf"):
+                        raise ValueError(f"Fingerprint store {self.path} contains an invalid {timestamp_field}")
+                for field, value in streaks.items():
+                    if field not in FINGERPRINT_DRIFT_FIELDS or type(value) is not int or value < 0:
+                        raise ValueError(f"Fingerprint store {self.path} contains invalid drift counters")
+                for field, change in active.items():
+                    if field not in FINGERPRINT_DRIFT_FIELDS or not isinstance(change, dict):
+                        raise ValueError(f"Fingerprint store {self.path} contains invalid drift evidence")
+                for sample in samples:
+                    if sample.get("band") not in (None, "Unknown", "2.4 GHz", "5 GHz", "6 GHz"):
+                        raise ValueError(f"Fingerprint store {self.path} contains an invalid band sample")
+                    channel = sample.get("channel")
+                    if channel is not None and (type(channel) is not int or not 1 <= channel <= 233):
+                        raise ValueError(f"Fingerprint store {self.path} contains an invalid channel sample")
+                    security = sample.get("security")
+                    if security is not None and security not in SECURITY_MODES:
+                        raise ValueError(f"Fingerprint store {self.path} contains an invalid security sample")
+            self.records = records
+
+    @staticmethod
+    def _key(ssid, bssid):
+        return json.dumps([ssid, bssid.lower()], ensure_ascii=False, separators=(",", ":"))
+
+    @staticmethod
+    def _sample(ap):
+        rssi = ap.get("rssi")
+        if isinstance(rssi, bool) or not isinstance(rssi, (int, float)) or not -127 <= rssi <= 0:
+            rssi = None
+        frequency_mhz = ap.get("frequency_mhz")
+        if isinstance(frequency_mhz, bool) or not isinstance(frequency_mhz, (int, float)) or not 2400 <= frequency_mhz <= 7125:
+            frequency_mhz = None
+        band = ap.get("band")
+        if band not in ("2.4 GHz", "5 GHz", "6 GHz"):
+            band = band_from_frequency(frequency_mhz)
+        channel = ap.get("channel")
+        if type(channel) is not int or not 1 <= channel <= 233:
+            channel = None
+        security = ap.get("security")
+        if security not in SECURITY_MODES:
+            security = "Unknown"
+        return {
+            "band": band,
+            "channel": channel,
+            "frequency_mhz": frequency_mhz,
+            "security": security,
+            "rssi": rssi,
+        }
+
+    @staticmethod
+    def _median(values):
+        values = sorted(values)
+        if not values:
+            return None
+        middle = len(values) // 2
+        if len(values) % 2:
+            return values[middle]
+        return round((values[middle - 1] + values[middle]) / 2, 1)
+
+    def _save(self, force=False):
+        if not self.dirty:
+            return
+        now = time.monotonic()
+        if not force and now - self.last_save < 5:
+            return
+        self.path.parent.mkdir(parents=True, exist_ok=True)
+        temporary_path = None
+        try:
+            with tempfile.NamedTemporaryFile(
+                "w", encoding="utf-8", dir=self.path.parent,
+                prefix=f".{self.path.name}.", suffix=".tmp", delete=False,
+            ) as temporary_file:
+                temporary_path = Path(temporary_file.name)
+                json.dump({"version": FINGERPRINT_VERSION, "networks": self.records}, temporary_file, ensure_ascii=False, indent=2)
+                temporary_file.write("\n")
+                temporary_file.flush()
+                os.fsync(temporary_file.fileno())
+            os.chmod(temporary_path, 0o600)
+            os.replace(temporary_path, self.path)
+        finally:
+            if temporary_path is not None and temporary_path.exists():
+                temporary_path.unlink()
+        self.dirty = False
+        self.last_save = now
+
+    def flush(self):
+        with self.lock:
+            self._save(force=True)
+
+    def observe(self, ap):
+        if not isinstance(ap, dict) or not isinstance(ap.get("ssid"), str) or not isinstance(ap.get("bssid"), str):
+            raise ValueError("Fingerprint observations require string SSID and BSSID values")
+        now_epoch = time.time()
+        now_iso = datetime.now(timezone.utc).isoformat()
+        key = self._key(ap["ssid"], ap["bssid"])
+        sample = self._sample(ap)
+        with self.lock:
+            record = self.records.get(key)
+            if record is None:
+                if len(self.records) >= FINGERPRINT_MAX_RECORDS:
+                    oldest_key = min(self.records, key=lambda existing: self.records[existing].get("last_seen_epoch", 0))
+                    del self.records[oldest_key]
+                record = {
+                    "ssid": ap["ssid"], "bssid": ap["bssid"], "first_seen": now_iso,
+                    "last_seen": now_iso, "last_seen_epoch": now_epoch,
+                    "last_sample_epoch": now_epoch - self.minimum_interval, "sightings": 0,
+                    "samples": [], "baseline": None,
+                    "drift_streaks": {field: 0 for field in FINGERPRINT_DRIFT_FIELDS},
+                    "active_drift": {},
+                }
+                self.records[key] = record
+            record["last_seen"] = now_iso
+            record["last_seen_epoch"] = now_epoch
+            self.dirty = True
+            if now_epoch - float(record.get("last_sample_epoch", 0)) < self.minimum_interval:
+                self._save()
+                return {"fingerprint": self._public_record(record), "newly_confirmed": []}
+
+            record["last_sample_epoch"] = now_epoch
+            record["sightings"] = int(record.get("sightings", 0)) + 1
+            record["samples"] = (record.get("samples", []) + [sample])[-FINGERPRINT_LEARNING_SIGHTINGS:]
+            newly_confirmed = []
+            if record.get("baseline") is None:
+                if record["sightings"] >= FINGERPRINT_LEARNING_SIGHTINGS:
+                    samples = record["samples"]
+                    baseline = {}
+                    for field in ("band", "channel", "frequency_mhz", "security"):
+                        values = [item.get(field) for item in samples if item.get(field) is not None and (field == "security" or item.get(field) != "Unknown")]
+                        if field == "security":
+                            baseline[field] = max(set(values), key=values.count) if values else "Unknown"
+                        else:
+                            baseline[field] = self._median(values)
+                    baseline["rssi_dbm"] = self._median([item["rssi"] for item in samples if item.get("rssi") is not None])
+                    baseline["learned_at"] = now_iso
+                    record["baseline"] = baseline
+                    record["samples"] = []
+                    record["drift_streaks"] = {field: 0 for field in FINGERPRINT_DRIFT_FIELDS}
+                    record["active_drift"] = {}
+            else:
+                recent_samples = record.setdefault("samples", [])
+                recent_samples.append(sample)
+                record["samples"] = recent_samples[-FINGERPRINT_LEARNING_SIGHTINGS:]
+                baseline = record["baseline"]
+                changed = {}
+                for field in ("band", "channel", "security"):
+                    expected = baseline.get(field)
+                    observed = sample.get(field)
+                    if expected not in (None, "Unknown") and observed not in (None, "Unknown") and expected != observed:
+                        changed[field] = {"baseline": expected, "observed": observed}
+                baseline_rssi = baseline.get("rssi_dbm")
+                observed_rssi = sample.get("rssi")
+                if baseline_rssi is not None and observed_rssi is not None and observed_rssi >= baseline_rssi + FINGERPRINT_SIGNAL_DELTA_DB:
+                    changed["strong_signal"] = {
+                        "baseline": baseline_rssi, "observed": observed_rssi,
+                        "threshold_db": FINGERPRINT_SIGNAL_DELTA_DB,
+                    }
+                drift_streaks = record.setdefault("drift_streaks", {field: 0 for field in FINGERPRINT_DRIFT_FIELDS})
+                previous_active = record.get("active_drift", {})
+                active = {}
+                for field in FINGERPRINT_DRIFT_FIELDS:
+                    if field in changed:
+                        drift_streaks[field] = int(drift_streaks.get(field, 0)) + 1
+                    else:
+                        drift_streaks[field] = 0
+                    if drift_streaks[field] >= FINGERPRINT_LEARNING_SIGHTINGS:
+                        active[field] = {**changed[field], "consecutive_sightings": drift_streaks[field]}
+                        if field not in previous_active:
+                            newly_confirmed.append(active[field] | {"field": field})
+                record["active_drift"] = active
+
+            should_save_baseline = record.get("baseline") is not None and record["sightings"] == FINGERPRINT_LEARNING_SIGHTINGS
+            self._save(force=bool(newly_confirmed) or should_save_baseline)
+            return {"fingerprint": self._public_record(record), "newly_confirmed": newly_confirmed}
+
+    def snapshot(self, limit=None, observed_after=None):
+        with self.lock:
+            records = sorted(self.records.values(), key=lambda record: record.get("last_seen_epoch", 0), reverse=True)
+            if limit is not None:
+                records = records[:limit]
+            result = []
+            for record in records:
+                public = self._public_record(record)
+                public["currently_observed"] = (
+                    observed_after is not None
+                    and float(record.get("last_seen_epoch", 0)) >= observed_after
+                )
+                result.append(public)
+            return result
+
+    @property
+    def count(self):
+        with self.lock:
+            return len(self.records)
+
+    @staticmethod
+    def _public_record(record):
+        return {
+            "ssid": record.get("ssid", ""),
+            "bssid": record.get("bssid", ""),
+            "status": "learning" if record.get("baseline") is None else "drift" if record.get("active_drift") else "baseline",
+            "sightings": int(record.get("sightings", 0)),
+            "required_sightings": FINGERPRINT_LEARNING_SIGHTINGS,
+            "minimum_interval_seconds": FINGERPRINT_MIN_INTERVAL_SECONDS,
+            "baseline": dict(record["baseline"]) if record.get("baseline") else None,
+            "latest": dict(record["samples"][-1]) if record.get("samples") else {},
+            "changed_fields": {field: dict(change) for field, change in record.get("active_drift", {}).items()},
+            "first_seen": record.get("first_seen"),
+            "last_seen": record.get("last_seen"),
+        }
 
 
 def run_command(*args):
@@ -431,8 +719,9 @@ class EventLogger:
 
 def process_access_point(ssid, bssid, rssi, channel, security, trusted_networks, event_logger, state, dashboard_state=None, frequency_mhz=None):
     band = band_from_frequency(frequency_mhz)
+    fingerprint_update = None
     if dashboard_state is not None:
-        dashboard_state.observe_access_point({
+        fingerprint_update = dashboard_state.observe_access_point({
             "ssid": ssid,
             "bssid": bssid,
             "rssi": rssi,
@@ -441,6 +730,15 @@ def process_access_point(ssid, bssid, rssi, channel, security, trusted_networks,
             "band": band,
             "security": security,
         })
+    if fingerprint_update:
+        for change in fingerprint_update["newly_confirmed"]:
+            message = (
+                f"[MEDIUM] R-07: Persistent RF fingerprint drift confirmed after "
+                f"{FINGERPRINT_LEARNING_SIGHTINGS} spaced observations: {change['field']} "
+                f"changed (baseline {change['baseline']}; observed {change['observed']})"
+            )
+            print(f"ALERT: {ssid or '<hidden SSID>'} | {bssid} | {message}", flush=True)
+            event_logger.write("ALERT", ssid, bssid, rssi, channel, security, message)
     network_key = (ssid, bssid)
     if network_key not in state["access_points"]:
         state["access_points"].add(network_key)
@@ -701,6 +999,10 @@ def main():
     parser.add_argument("--dashboard-key", type=Path, help="TLS private key (required when dashboard password is set)")
     parser.add_argument("--config", type=Path, default=DEFAULT_CONFIG, help="trusted network JSON configuration")
     parser.add_argument("--log", type=Path, default=DEFAULT_LOG, help="CSV event log path")
+    parser.add_argument(
+        "--fingerprints", type=Path, default=PROJECT_ROOT / "logs" / "fingerprints.json",
+        help="persistent observational AP fingerprint store (never an authorization list)",
+    )
     args = parser.parse_args()
     if args.dwell <= 0:
         parser.error("--dwell must be greater than zero")
@@ -739,6 +1041,11 @@ def main():
             event_logger.close()
             raise SystemExit(f"Could not read event history {args.log}: {error}") from error
     event_logger.on_write = dashboard_state.record_event
+    try:
+        dashboard_state.fingerprint_store = FingerprintStore(args.fingerprints)
+    except (OSError, ValueError) as error:
+        event_logger.close()
+        raise SystemExit(str(error)) from error
     dashboard_server = None
     print(
         f"Starting {args.mode}-mode detector on {args.interface} with {len(trusted_networks)} trusted network(s). "
@@ -778,6 +1085,7 @@ def main():
                 f"{len(state['alerts'])} unique alert(s). CSV log: {args.log}",
                 flush=True,
             )
+            dashboard_state.fingerprint_store.flush()
             print("Stopped; managed Wi-Fi interface left in its original connection mode.", flush=True)
         return
 
@@ -824,6 +1132,7 @@ def main():
             f"{len(state['alerts'])} unique alert(s). CSV log: {args.log}",
             flush=True,
         )
+        dashboard_state.fingerprint_store.flush()
         print("Stopped; wireless interface restored where possible.", flush=True)
 
 
