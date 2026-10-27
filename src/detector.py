@@ -90,6 +90,8 @@ class DetectorState:
                         "bssid": ap["bssid"],
                         "rssi": ap.get("rssi"),
                         "channel": ap.get("channel"),
+                        "frequency_mhz": ap.get("frequency_mhz"),
+                        "band": ap.get("band", band_from_frequency(ap.get("frequency_mhz"))),
                         "security": ap.get("security", "Unknown"),
                         "first_seen": ap.get("first_seen"),
                         "last_seen": ap.get("last_seen"),
@@ -205,13 +207,19 @@ def get_ssid(frame):
 
 
 def get_channel(packet):
+    frequency_mhz = get_radio_frequency(packet)
     frame = packet.getlayer(Dot11Beacon) or packet.getlayer(Dot11ProbeResp)
-    if frame is None:
-        return None
-    for element_id, info in information_elements(frame):
+    channel = channel_from_frequency(frequency_mhz) if frequency_mhz is not None else None
+    for element_id, info in information_elements(frame) if frame is not None else ():
         if element_id == 3 and info:
-            return info[0]
-    return None
+            channel = info[0]
+    return channel
+
+
+def get_radio_frequency(packet):
+    radio = packet.getlayer(RadioTap)
+    frequency = getattr(radio, "ChannelFrequency", None) if radio else None
+    return int(frequency) if isinstance(frequency, (int, float)) and frequency > 0 else None
 
 
 def channel_from_frequency(frequency):
@@ -224,6 +232,18 @@ def channel_from_frequency(frequency):
     if 5955 <= frequency <= 7115 and (frequency - 5950) % 5 == 0:
         return (frequency - 5950) // 5
     return None
+
+
+def band_from_frequency(frequency_mhz):
+    if frequency_mhz is None:
+        return "Unknown"
+    if 2400 <= frequency_mhz < 2500:
+        return "2.4 GHz"
+    if 4900 <= frequency_mhz < 5925:
+        return "5 GHz"
+    if 5925 <= frequency_mhz <= 7125:
+        return "6 GHz"
+    return "Unknown"
 
 
 def parse_iw_scan(output):
@@ -239,6 +259,8 @@ def parse_iw_scan(output):
                 "ssid": "",
                 "rssi": None,
                 "channel": None,
+                "frequency_mhz": None,
+                "band": "Unknown",
                 "security": "Open",
                 "has_rsn": False,
                 "has_wpa": False,
@@ -255,7 +277,10 @@ def parse_iw_scan(output):
             access_point["ssid"] = value
         elif key == "freq":
             try:
-                access_point["channel"] = channel_from_frequency(round(float(value)))
+                frequency_mhz = round(float(value))
+                access_point["frequency_mhz"] = frequency_mhz
+                access_point["channel"] = channel_from_frequency(frequency_mhz)
+                access_point["band"] = band_from_frequency(frequency_mhz)
             except ValueError:
                 pass
         elif key == "signal":
@@ -404,21 +429,24 @@ class EventLogger:
         self.file.close()
 
 
-def process_access_point(ssid, bssid, rssi, channel, security, trusted_networks, event_logger, state, dashboard_state=None):
+def process_access_point(ssid, bssid, rssi, channel, security, trusted_networks, event_logger, state, dashboard_state=None, frequency_mhz=None):
+    band = band_from_frequency(frequency_mhz)
     if dashboard_state is not None:
         dashboard_state.observe_access_point({
             "ssid": ssid,
             "bssid": bssid,
             "rssi": rssi,
             "channel": channel,
+            "frequency_mhz": frequency_mhz,
+            "band": band,
             "security": security,
         })
     network_key = (ssid, bssid)
     if network_key not in state["access_points"]:
         state["access_points"].add(network_key)
         signal = f"{rssi} dBm" if rssi is not None else "RSSI unavailable"
-        frequency = f"channel {channel}" if channel is not None else "channel unavailable"
-        print(f"AP: {ssid or '<hidden SSID>'} | {bssid} | {signal} | {frequency} | {security}", flush=True)
+        radio = f"{band} · {frequency_mhz} MHz · channel {channel}" if frequency_mhz is not None else f"band unavailable · channel {channel if channel is not None else 'unavailable'}"
+        print(f"AP: {ssid or '<hidden SSID>'} | {bssid} | {signal} | {radio} | {security}", flush=True)
         event_logger.write("AP", ssid, bssid, rssi, channel, security, "Access point discovered")
 
         if ssid:
@@ -461,6 +489,7 @@ def packet_callback(packet, trusted_networks, event_logger, state, dashboard_sta
         event_logger,
         state,
         dashboard_state,
+        get_radio_frequency(packet),
     )
 
 
@@ -513,6 +542,7 @@ def managed_scan_loop(interface, interval, trusted_networks, event_logger, state
                     event_logger,
                     state,
                     dashboard_state,
+                    access_point.get("frequency_mhz"),
                 )
         interval = dashboard_state.scan_interval if dashboard_state is not None else interval
         elapsed = 0.0
