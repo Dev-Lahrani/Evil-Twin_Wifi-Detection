@@ -1,0 +1,96 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="dark">
+<title>Wireless Security Report · RF-01</title>
+<style>
+:root{color-scheme:dark;--paper:#07111f;--sheet:#0d1b2a;--ink:#e8f3ff;--muted:#91a4b8;--line:#23364c;--cyan:#65d9ff;--green:#54e6a0;--amber:#ffbd69;--red:#ff6478;--mono:ui-monospace,SFMono-Regular,Consolas,monospace;--sans:Arial,Helvetica,sans-serif}*{box-sizing:border-box}body{margin:0;background:radial-gradient(ellipse at 10% -10%,#0e749033,transparent 38%),var(--paper);color:var(--ink);font:14px/1.5 var(--sans)}.shell{max-width:1200px;margin:auto;padding:28px 32px 44px}.topbar{display:flex;align-items:center;justify-content:space-between;gap:16px}.brand{font:11px var(--mono);letter-spacing:.14em;color:var(--cyan)}.actions{display:flex;gap:9px;flex-wrap:wrap}.button{padding:9px 13px;border:1px solid #36c8fa;border-radius:8px;background:linear-gradient(135deg,#1285b5,#1769bb);color:white;font:12px var(--sans);text-decoration:none;cursor:pointer}.button.secondary{border-color:#49647f;background:transparent;color:#d9ebfc}.intro{margin:38px 0 22px}.eyebrow{color:var(--cyan);font:11px var(--mono);letter-spacing:.13em;text-transform:uppercase}h1{margin:7px 0;font-size:clamp(30px,5vw,48px);letter-spacing:-.05em}.intro p,.muted{color:var(--muted)}.metadata{display:flex;flex-wrap:wrap;gap:9px;margin-top:17px}.chip{padding:6px 10px;border:1px solid var(--line);border-radius:999px;background:#102034;color:#a9c4dc;font:11px var(--mono)}.summary{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin:22px 0}.summary article,.panel{padding:16px;border:1px solid var(--line);border-radius:12px;background:linear-gradient(145deg,#101f30,#0b1522)}.label{color:var(--muted);font:10px var(--mono);letter-spacing:.1em;text-transform:uppercase}.value{margin-top:6px;color:var(--cyan);font:28px var(--mono)}.value.high{color:var(--red)}.value.warn{color:var(--amber)}.panel{margin-top:16px}.panel-head{display:flex;align-items:baseline;justify-content:space-between;gap:12px;border-bottom:1px solid var(--line);padding-bottom:10px}.panel-head h2{margin:0;font-size:17px}.panel-head span{color:var(--muted);font:10px var(--mono)}.notice{margin:14px 0 0;padding:11px 13px;border-left:3px solid var(--cyan);border-radius:0 8px 8px 0;background:#56c9ff0c;color:#c5d9eb;font-size:12px}.notice.warn{border-color:var(--amber);background:#ffbd690c}.notice.danger{border-color:var(--red);background:#ff647812}.table-wrap{margin-top:12px;overflow:auto;border:1px solid var(--line);border-radius:9px}table{width:100%;border-collapse:collapse;min-width:930px;text-align:left;background:#091523}th{padding:11px 10px;color:#9fb3c8;font:10px var(--mono);text-transform:uppercase;letter-spacing:.06em;border-bottom:1px solid var(--line);white-space:nowrap}td{padding:11px 10px;vertical-align:top;border-bottom:1px solid #1b3044;font-size:12px}tbody tr:last-child td{border:0}.risk{min-width:118px}.risk strong{color:var(--green);font:700 18px var(--mono)}.risk.medium strong{color:var(--amber)}.risk.high strong{color:var(--red)}.risk small,.rule-list,.ssid-note{display:block;margin-top:4px;color:var(--muted);font:10px var(--mono)}.ssid{font-weight:700;overflow-wrap:anywhere}.bssid{font:11px var(--mono);overflow-wrap:anywhere}.flag{display:inline-block;margin-top:5px;padding:3px 7px;border:1px solid #ff647866;border-radius:999px;background:#ff64781a;color:#ff8997;font:10px var(--mono)}.flag.trusted{border-color:#54e6a066;background:#54e6a012;color:#79eab2}.rule-chip{display:inline-block;margin:2px 3px 2px 0;padding:3px 6px;border:1px solid #34506b;border-radius:999px;background:#122339;color:#c4d8ec;font:10px var(--mono)}.rule-chip.identity{border-color:#ff647866;color:#ff9aa7}footer{margin-top:25px;padding-top:14px;border-top:1px solid var(--line);color:var(--muted);font-size:11px}.state{padding:30px;color:var(--muted);text-align:center}@media(max-width:760px){.shell{padding:20px 16px 36px}.summary{grid-template-columns:repeat(2,minmax(0,1fr))}.topbar{align-items:flex-start;flex-direction:column}.intro{margin-top:28px}}@media print{ :root{color-scheme:light;--paper:#fff;--sheet:#fff;--ink:#152131;--muted:#506174;--line:#c9d2dc;--cyan:#176b94;--green:#167447;--amber:#8e5a08;--red:#a9233d}body{background:#fff;color:#152131;font-size:10pt}.shell{max-width:none;padding:0}.topbar .actions,.button,.notice .screen-only{display:none!important}.intro{margin:20px 0}.summary{gap:7px;margin:12px 0}.summary article,.panel{break-inside:avoid;box-shadow:none;background:#fff;border-color:#c9d2dc}.value{font-size:19pt}table{min-width:0;background:#fff}th{color:#263548;background:#eef3f7;font-size:8pt}td{font-size:8pt;border-color:#d8e0e8}.rule-chip,.chip,.flag{color:#182535;background:#f3f6f8;border-color:#aebdcb}.panel-head span{color:#566579}.notice{background:#f5f8fa;color:#34485b;border-color:#5f7991}.notice.warn{border-color:#a97519}.notice.danger{border-color:#a9233d}.table-wrap{overflow:visible}.risk strong{color:#192b3d!important}footer{color:#45586c}}
+</style>
+</head>
+<body>
+<main class="shell">
+<div class="topbar"><span class="brand">RF-01 / WIRELESS SECURITY</span><div class="actions"><a class="button secondary" href="/">← Live dashboard</a><button class="button secondary" id="csv-button" type="button">Download CSV</button><button class="button" id="print-button" type="button">Print / Save PDF</button></div></div>
+<header class="intro"><div class="eyebrow">Local scan assessment</div><h1>Wireless Security Report</h1><p>A time-stamped summary of observed access points, trusted-network matches, and triggered comparison rules.</p><div class="metadata"><span class="chip" id="generated">Generated —</span><span class="chip" id="scan-mode">Scan mode —</span><span class="chip" id="trusted-count">Trusted profiles —</span></div></header>
+<section class="summary" aria-label="Report summary"><article><div class="label">Observed APs</div><div class="value" id="ap-count">—</div></article><article><div class="label">Configured profiles seen</div><div class="value" id="trusted-seen">—</div></article><article><div class="label">Potential twin candidates</div><div class="value high" id="twin-count">—</div></article><article><div class="label">APs with triggered rules</div><div class="value warn" id="flagged-count">—</div></article></section>
+<section class="panel"><div class="panel-head"><h2>Assessment notes</h2><span>INTERPRETATION</span></div><div class="notice danger" id="twin-note">Loading trusted-SSID duplicate assessment.</div><div class="notice warn" id="score-note">Rule scores are transparent rule-count heuristics, not calibrated probabilities of malicious activity.</div><div class="notice" id="coverage-note">A 0% rule score indicates no configured comparison rules fired. It does not certify that an access point is safe.</div></section>
+<section class="panel"><div class="panel-head"><h2>Access-point findings</h2><span id="table-count">CURRENT OBSERVATIONS</span></div><div class="table-wrap"><table><thead><tr><th>Network</th><th>BSSID</th><th>Trusted match</th><th>Signal / radio</th><th>Security</th><th>Rule score</th><th>Triggered rules</th></tr></thead><tbody id="report-rows"><tr><td colspan="7" class="state">Fetching the latest detector snapshot…</td></tr></tbody></table></div></section>
+<footer>Generated locally from the detector's current in-memory scan snapshot. Scores measure the fraction of applicable trusted-network comparison rules fired; they are investigation aids, not statistical probabilities or attack verdicts.</footer>
+</main>
+<script>
+(() => {
+  const $ = id => document.getElementById(id);
+  let rows = [];
+  const esc = value => String(value ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+  const cell = value => value == null || value === "" ? "" : String(value);
+  const csv = value => {
+    let text=cell(value);
+    if (/^[\t\r=+\-@]/.test(text)) text=`'${text}`;
+    return `"${text.replace(/"/g, '""')}"`;
+  };
+  function ruleLabel(rule) {
+    const labels={"R-01":"BSSID mismatch","R-02":"Unusually strong signal","R-04":"Security mismatch","R-05":"Channel mismatch"};
+    return labels[rule] || rule;
+  }
+  function render(data) {
+    rows=data.access_points||[];
+    const profiles={...(data.trusted_networks||{})};
+    (data.twin_comparisons||[]).forEach(group=>{if(group.ssid&&group.expected){if(!profiles[group.ssid])profiles[group.ssid]={...group.expected,comparison_only:true};}});
+    currentProfiles=profiles;
+    const isTrusted=ap=>Boolean(ap.trusted||profiles[ap.ssid]?.bssid?.toLowerCase()===ap.bssid?.toLowerCase());
+    const twinCount=rows.filter(ap=>ap.ssid&&profiles[ap.ssid]&&!isTrusted(ap)).length;
+    const flagged=rows.filter(ap=>(ap.rule_count||0)>0).length;
+    $("generated").textContent=`Generated ${new Date().toLocaleString()}`;
+    $("scan-mode").textContent=`${data.scan_mode||"unknown"} mode · ${data.scanner_running?"scanning":"paused"}`;
+    $("trusted-count").textContent=`Trusted profiles ${Object.keys(profiles).length}`;
+    $("ap-count").textContent=rows.length;
+    $("trusted-seen").textContent=rows.filter(isTrusted).length;
+    $("twin-count").textContent=twinCount;
+    $("flagged-count").textContent=flagged;
+    $("table-count").textContent=`${rows.length} CURRENT OBSERVATIONS`;
+    $("twin-note").textContent=twinCount?`${twinCount} untrusted BSSID${twinCount===1?"":"s"} advertised a trusted SSID in this snapshot. These are potential evil twins to verify, not confirmed attacks; mesh nodes and extenders can legitimately share a name.`:"No untrusted BSSID using a configured trusted SSID appears in this current snapshot. This does not prove the RF environment is safe.";
+    $("twin-note").classList.toggle("danger",twinCount>0);
+    $("twin-note").classList.toggle("warn",twinCount===0);
+    $("score-note").textContent=`Scores count distinct triggered trusted-network checks over the applicable configured checks. Current scan errors: ${data.last_error||"none"}.`;
+    const entries=rows.map(ap=>{
+      const rules=ap.rule_ids||[];
+      const trusted=isTrusted(ap);
+      const status=trusted?"TRUSTED BSSID":(ap.ssid&&profiles[ap.ssid]?"POTENTIAL TWIN · VERIFY":"UNTRUSTED / UNPROFILED");
+      const score=ap.heuristic_rule_score;
+      const scoreClass=score===null||score===undefined?"":score>=75?"high":score>=25?"medium":"";
+      const finding=rules.length?rules.map(rule=>`<span class="rule-chip ${rule==="R-01"?"identity":""}">${esc(rule)} · ${esc(ruleLabel(rule))}</span>`).join(""):'<span class="muted">No configured rules triggered</span>';
+      return `<tr><td><span class="ssid">${esc(ap.ssid||"Hidden network")}</span></td><td class="bssid">${esc(ap.bssid)}</td><td><span class="flag ${trusted?"trusted":""}">${esc(status)}</span></td><td>${esc(ap.rssi==null?"Unavailable":`${ap.rssi} dBm`)}<div class="ssid-note">${esc(ap.band||"Unknown")}${ap.channel==null?"":` · ch ${esc(ap.channel)}`}${ap.frequency_mhz==null?"":` · ${esc(ap.frequency_mhz)} MHz`}</div></td><td>${esc(ap.security||"Unknown")}</td><td class="risk ${scoreClass}">${score==null||score===undefined?'<span class="muted">N/A · no trusted baseline</span>':`<strong>${esc(score)}%</strong><small>${esc(ap.rule_count||0)} / ${esc(ap.rule_capacity||0)} applicable rules</small>`}</td><td>${finding}</td></tr>`;
+    });
+    $("report-rows").innerHTML=entries.join("")||'<tr><td colspan="7" class="state">No access points in the current scan snapshot.</td></tr>';
+  }
+  function downloadCsv() {
+    const header=["SSID","BSSID","Trusted_match","Potential_twin","RSSI_dBm","Band","Channel","Frequency_MHz","Security","Heuristic_rule_score_percent","Triggered_rule_count","Applicable_rule_count","Triggered_rule_ids","Triggered_findings"];
+    const profiles=stateProfiles();
+    const lines=[header.map(csv).join(","),...rows.map(ap=>{
+      const rules=ap.rule_ids||[];
+      const findings=ap.findings||[];
+      const trusted=Boolean(ap.trusted||profiles[ap.ssid]?.bssid?.toLowerCase()===ap.bssid?.toLowerCase());
+      return [ap.ssid,ap.bssid,trusted,Boolean(ap.ssid&&profiles[ap.ssid]&&!trusted),ap.rssi,ap.band,ap.channel,ap.frequency_mhz,ap.security,ap.heuristic_rule_score,ap.rule_count,ap.rule_capacity,rules.join("; "),findings.join("; ")].map(csv).join(",");
+    })].join("\r\n");
+    const blob=new Blob(["\ufeff",lines],{type:"text/csv;charset=utf-8"});
+    const url=URL.createObjectURL(blob),link=document.createElement("a");link.href=url;link.download=`wireless-security-report-${new Date().toISOString().replace(/[:.]/g,"-")}.csv`;link.click();URL.revokeObjectURL(url);
+  }
+  function stateProfiles(){return currentProfiles;}
+  let currentProfiles={};
+  async function load() {
+    try {
+      const response=await fetch("/api/status",{cache:"no-store"});
+      if(!response.ok)throw new Error(`Detector returned HTTP ${response.status}`);
+      const data=await response.json();currentProfiles=data.trusted_networks||{};render(data);
+    } catch(error) {
+      $("report-rows").innerHTML=`<tr><td colspan="7" class="state">Report unavailable: ${esc(error.message)}. Open the report page from the live detector while it is running.</td></tr>`;
+    }
+  }
+  $("print-button").addEventListener("click",()=>window.print());
+  $("csv-button").addEventListener("click",downloadCsv);
+  load();
+})();
+</script>
+</body>
+</html>

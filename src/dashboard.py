@@ -11,6 +11,7 @@ from urllib.parse import urlsplit
 
 
 DASHBOARD_HTML = Path(__file__).with_name("dashboard.html")
+REPORT_HTML = Path(__file__).with_name("report.html")
 MAX_BODY_BYTES = 64 * 1024
 SESSION_SECONDS = 8 * 60 * 60
 
@@ -134,11 +135,13 @@ class DashboardServer:
                 return session
 
             def do_GET(self):
-                if self.path == "/":
+                if self.path in ("/", "/report"):
+                    page_path = REPORT_HTML if self.path == "/report" else DASHBOARD_HTML
+                    unavailable = "Report page is unavailable." if self.path == "/report" else "Dashboard page is unavailable."
                     try:
-                        page = DASHBOARD_HTML.read_bytes()
+                        page = page_path.read_bytes()
                     except OSError:
-                        self._send(500, "Dashboard page is unavailable.", "text/plain; charset=utf-8")
+                        self._send(500, unavailable, "text/plain; charset=utf-8")
                         return
                     self._send(200, page, "text/html; charset=utf-8")
                     return
