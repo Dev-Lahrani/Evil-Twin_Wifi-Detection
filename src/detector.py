@@ -97,7 +97,22 @@ class DetectorState:
                     ap.get("ssid", ""), ap["bssid"], ap.get("rssi"), ap.get("channel"),
                     ap.get("security", "Unknown"), self.trusted_networks,
                 )
-                ap["trusted"] = ap.get("ssid", "") in self.trusted_networks and ap.get("bssid", "").lower() == self.trusted_networks[ap["ssid"]]["bssid"].lower()
+                ap["rule_ids"] = list(dict.fromkeys(
+                    match.group(1)
+                    for finding in ap["findings"]
+                    if (match := re.search(r"\b(R-\d+):", finding))
+                ))
+                expected = self.trusted_networks.get(ap.get("ssid", ""))
+                ap["rule_count"] = len(ap["rule_ids"])
+                ap["rule_capacity"] = (
+                    1 + sum(expected.get(field) is not None for field in ("channel", "security", "rssi_threshold"))
+                    if expected else 0
+                )
+                ap["heuristic_rule_score"] = (
+                    min(100, round(ap["rule_count"] * 100 / ap["rule_capacity"]))
+                    if expected else None
+                )
+                ap["trusted"] = bool(expected and ap.get("bssid", "").lower() == expected["bssid"].lower())
             comparisons = []
             for ssid, expected in self.trusted_networks.items():
                 expected_bssid = expected["bssid"].lower()
