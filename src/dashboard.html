@@ -35,6 +35,8 @@
 (() => {
   const $ = (id) => document.getElementById(id);
   const state = { csrf: "", authenticated: false, adminEnabled: false, adminPanelMode: "", events: [], status: {} };
+  const bssidPattern = /^([0-9a-f]{2}:){5}[0-9a-f]{2}$/i;
+  const securityModes = new Set(["Open", "WEP", "WPA", "WPA2/3"]);
   const esc = (value) => String(value ?? "").replace(/[&<>"']/g, (c) => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
   const time = (value) => { if (!value) return "—"; const d = new Date(value); return Number.isNaN(d.valueOf()) ? "—" : d.toLocaleTimeString([], {hour:"2-digit",minute:"2-digit",second:"2-digit"}); };
   const msg = (text, error=false) => { $("admin-message").textContent = text; $("admin-message").classList.toggle("error", error); };
@@ -66,7 +68,7 @@
     const interval = state.status.scan_interval || 30;
     const configuration = {trusted_networks:config,scan_interval:interval};
     const scanControls = state.status.scan_mode === "managed" ? '<div class="actions"><button class="button" id="start-button">Start scans</button><button class="button danger" id="stop-button">Pause scans</button></div>' : '<p>Monitor capture is controlled from the station.</p>';
-    const content = `<h3>Controls enabled</h3><p>Scanner controls are applied on the Pi. Configuration is validated before saving.</p>${scanControls}<label class="field-label" for="trusted-config">Trusted networks + scan interval · JSON</label><textarea class="field" id="trusted-config" spellcheck="false">${esc(JSON.stringify(configuration,null,2))}</textarea><div class="actions"><button class="button secondary" id="save-config">Validate &amp; save</button><button class="button secondary" id="logout-button">Sign out</button></div><div class="admin-message" id="admin-message" role="status"></div>`;
+    const content = `<h3>Controls enabled</h3><p>Scanner controls are applied on the Pi. Configuration is validated before saving.</p>${scanControls}<label class="field-label" for="trusted-config">Trusted networks + scan interval · JSON</label><textarea class="field" id="trusted-config" spellcheck="false">${esc(JSON.stringify(configuration,null,2))}</textarea><label class="field-label" for="trusted-ssid">Add trusted network from dashboard</label><input class="field" id="trusted-ssid" type="text" placeholder="SSID"><input class="field" id="trusted-bssid" type="text" placeholder="BSSID (aa:bb:cc:dd:ee:ff)"><input class="field" id="trusted-channel" type="number" min="1" max="13" step="1" placeholder="Channel (optional)"><input class="field" id="trusted-rssi-threshold" type="number" min="-100" max="0" step="1" placeholder="RSSI threshold dBm (optional)"><select class="field" id="trusted-security"><option value="">Security (optional)</option><option>Open</option><option>WEP</option><option>WPA</option><option>WPA2/3</option></select><div class="actions"><button class="button secondary" id="add-trusted-network">Add trusted network</button><button class="button secondary" id="save-config">Validate &amp; save</button><button class="button secondary" id="logout-button">Sign out</button></div><div class="admin-message" id="admin-message" role="status"></div>`;
     if (panel.dataset.renderedMode !== "admin") {
       panel.innerHTML = content;
       panel.dataset.renderedMode = "admin";
@@ -75,6 +77,7 @@
         $("stop-button").addEventListener("click", () => scanAction("stop"));
       }
       $("logout-button").addEventListener("click", logout);
+      $("add-trusted-network").addEventListener("click", addTrustedNetwork);
       $("save-config").addEventListener("click", saveConfig);
     } else {
       const textarea = $("trusted-config");
@@ -101,6 +104,54 @@
       msg("Configuration validated and saved. New settings apply on the next scan.");
       await refresh();
     } catch(error) { msg(error.message,true); }
+  }
+  function parseCurrentConfig() {
+    const fallback={trusted_networks:state.status.trusted_networks||{},scan_interval:state.status.scan_interval||30};
+    try {
+      const parsed=JSON.parse($("trusted-config").value);
+      if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) throw new Error();
+      if (!parsed.trusted_networks || typeof parsed.trusted_networks !== "object" || Array.isArray(parsed.trusted_networks)) throw new Error();
+      return parsed;
+    } catch {
+      return fallback;
+    }
+  }
+  async function addTrustedNetwork() {
+    const ssid=$("trusted-ssid").value.trim();
+    const rawBssid=$("trusted-bssid").value.trim().toLowerCase();
+    const channelText=$("trusted-channel").value.trim();
+    const rssiText=$("trusted-rssi-threshold").value.trim();
+    const security=$("trusted-security").value.trim();
+    if (!ssid) { msg("SSID is required.", true); return; }
+    if (!bssidPattern.test(rawBssid)) { msg("BSSID must be a colon-separated MAC address.", true); return; }
+    const channel=channelText === "" ? null : Number(channelText);
+    if (channelText !== "" && (!Number.isInteger(channel) || channel < 1 || channel > 13)) { msg("Channel must be an integer between 1 and 13.", true); return; }
+    const rssi=rssiText === "" ? null : Number(rssiText);
+    if (rssiText !== "" && (!Number.isFinite(rssi) || rssi < -100 || rssi > 0)) { msg("RSSI threshold must be between -100 and 0 dBm.", true); return; }
+    if (security && !securityModes.has(security)) { msg("Security must be Open, WEP, WPA, or WPA2/3.", true); return; }
+    const parsed=parseCurrentConfig();
+    const trusted={...(parsed.trusted_networks||{})};
+    const network={bssid:rawBssid};
+    if (channel !== null) network.channel=channel;
+    if (rssi !== null) network.rssi_threshold=rssi;
+    if (security) network.security=security;
+    trusted[ssid]=network;
+    const payload={trusted_networks:trusted,scan_interval:parsed.scan_interval ?? state.status.scan_interval ?? 30};
+    try {
+      const result=await api("/api/admin/config", {method:"POST", body:JSON.stringify(payload)});
+      state.status.trusted_networks=result.config.trusted_networks;
+      state.status.scan_interval=result.config.scan_interval;
+      $("trusted-config").value=JSON.stringify({trusted_networks:result.config.trusted_networks,scan_interval:result.config.scan_interval},null,2);
+      $("trusted-ssid").value="";
+      $("trusted-bssid").value="";
+      $("trusted-channel").value="";
+      $("trusted-rssi-threshold").value="";
+      $("trusted-security").value="";
+      msg(`Trusted network "${ssid}" added.`);
+      await refresh();
+    } catch(error) {
+      msg(error.message,true);
+    }
   }
   function render(status, events) {
     state.status=status; state.events=events;
