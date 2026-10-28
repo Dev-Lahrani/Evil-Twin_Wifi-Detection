@@ -931,8 +931,8 @@ def start_dashboard(args, dashboard_state, trusted_networks, stop_event):
             raise SystemExit(f"Could not read dashboard password file: {error}") from error
     if args.dashboard_host in ("0.0.0.0", "::") and password and not args.dashboard_cert:
         raise SystemExit("LAN dashboard controls require TLS; provide a certificate/key or run read-only.")
-    if password and len(password) < 14:
-        raise SystemExit("Dashboard password must be at least 14 characters")
+    if password and len(password) < 5:
+        raise SystemExit("Dashboard password must be at least 5 characters")
     if bool(args.dashboard_cert) != bool(args.dashboard_key):
         raise SystemExit("Provide both --dashboard-cert and --dashboard-key for HTTPS")
     if password and not args.dashboard_cert:
